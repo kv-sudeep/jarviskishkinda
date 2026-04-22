@@ -290,17 +290,39 @@ function Index() {
               <StatRow label="COMMS" value="ONLINE" status="online" />
             </Panel>
 
-            {/* ENVIRONMENT + RADAR */}
+            {/* ENVIRONMENT — real data from Open-Meteo */}
             <Panel title="ENVIRONMENT" className="mt-auto">
               <div className="flex gap-3">
                 <div className="flex-1 space-y-0.5">
-                  <StatRow label="TEMP" value="22°C" />
-                  <StatRow label="HUMIDITY" value="45%" />
-                  <StatRow label="PRESSURE" value="1013" />
-                  <StatRow label="WIND" value="6 km/h" />
+                  <StatRow
+                    label="TEMP"
+                    value={env.temperature != null ? `${env.temperature.toFixed(1)}°C` : "—"}
+                  />
+                  <StatRow
+                    label="HUMIDITY"
+                    value={env.humidity != null ? `${Math.round(env.humidity)}%` : "—"}
+                  />
+                  <StatRow
+                    label="PRESSURE"
+                    value={env.pressure != null ? `${Math.round(env.pressure)}` : "—"}
+                  />
+                  <StatRow
+                    label="WIND"
+                    value={env.windSpeed != null ? `${env.windSpeed.toFixed(1)} km/h` : "—"}
+                  />
                 </div>
                 <Radar />
               </div>
+              {env.loading && (
+                <div className="mt-2 text-[9px] tracking-[0.3em] text-hud-orange animate-flicker">
+                  ◉ FETCHING ATMOSPHERIC DATA . . .
+                </div>
+              )}
+              {env.error && (
+                <div className="mt-2 text-[9px] tracking-[0.3em] text-destructive">
+                  ◉ {env.error}
+                </div>
+              )}
             </Panel>
           </aside>
         </div>
