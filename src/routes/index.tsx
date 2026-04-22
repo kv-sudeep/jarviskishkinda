@@ -217,10 +217,17 @@ function Index() {
             </Panel>
           </aside>
 
-          {/* ============ CENTER (empty — 3D core shows through) ============ */}
-          <section className="col-span-6 relative pointer-events-none">
-            {/* Bottom-center JARVIS dialog */}
-            <div className="absolute bottom-0 left-1/2 w-[90%] max-w-md -translate-x-1/2 pointer-events-auto">
+          {/* ============ CENTER (3D core in background) ============ */}
+          <section className="col-span-6 relative pointer-events-none flex flex-col justify-end gap-3 pb-2">
+            {/* 3D BAR GRAPH — real-time live metrics */}
+            <div className="pointer-events-auto">
+              <Panel title="LIVE METRICS · 3D">
+                <BarGraph3D data={barData} height={200} />
+              </Panel>
+            </div>
+
+            {/* JARVIS dialog */}
+            <div className="pointer-events-auto">
               <Panel>
                 <div className="mb-1 flex items-center gap-2">
                   <span className="font-display text-[10px] tracking-[0.4em] text-hud-cyan">
