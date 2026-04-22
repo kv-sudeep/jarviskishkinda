@@ -6,9 +6,11 @@ import { Panel, StatRow, Bar, MiniGraph } from "@/components/jarvis/Panel";
 import { Waveform } from "@/components/jarvis/Waveform";
 import { Radar } from "@/components/jarvis/Radar";
 import { BottomNav } from "@/components/jarvis/BottomNav";
+import { BarGraph3D } from "@/components/jarvis/BarGraph3D";
 import { useClock, useLiveMetric } from "@/hooks/use-clock";
 import { useVoiceRecognition } from "@/hooks/use-voice";
 import { useLocation } from "@/hooks/use-location";
+import { useEnvironment } from "@/hooks/use-environment";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -31,7 +33,17 @@ function Index() {
   const processor = useLiveMetric(18, 42, 1.5);
   const voice = useVoiceRecognition();
   const loc = useLocation();
+  const env = useEnvironment(loc.latitude, loc.longitude);
   const lastCommand = voice.logs[0];
+
+  const barData = [
+    { label: "CORE", value: ((coreTemp - 35) / 5) * 100, color: 0x00e5ff },
+    { label: "MEM", value: memory, color: 0x2a7bff },
+    { label: "CPU", value: processor, color: 0x00e5ff },
+    { label: "TEMP", value: env.temperature != null ? Math.min(100, Math.max(0, ((env.temperature + 10) / 50) * 100)) : 0, color: 0xff7a1a },
+    { label: "HUM", value: env.humidity ?? 0, color: 0x2a7bff },
+    { label: "WIND", value: env.windSpeed != null ? Math.min(100, env.windSpeed * 3) : 0, color: 0x00e5ff },
+  ];
 
   return (
     <>
