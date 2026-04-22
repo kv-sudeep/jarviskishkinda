@@ -1,6 +1,10 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useState } from "react";
 
 import appCss from "../styles.css?url";
+import { AuthProvider } from "@/components/jarvis/AuthContext";
+import { AuthScreen } from "@/components/jarvis/AuthScreen";
+import { type LoginResponse } from "@/lib/auth_api";
 
 function NotFoundComponent() {
   return (
@@ -29,18 +33,13 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "AI Nexus Hub generates immersive 3D websites from image and text prompts, creating a futuristic holographic interface." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "AI Nexus Hub generates immersive 3D websites from image and text prompts, creating a futuristic holographic interface." },
+      { title: "JARVIS — Stark Industries AI" },
+      { name: "description", content: "JARVIS 2.0 holographic AI control interface — live diagnostics, voice recognition, and environmental telemetry." },
+      { name: "author", content: "Stark Industries" },
+      { property: "og:title", content: "JARVIS — Stark Industries AI" },
+      { property: "og:description", content: "JARVIS 2.0 — Owner-authenticated AI interface." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
-      { name: "twitter:description", content: "AI Nexus Hub generates immersive 3D websites from image and text prompts, creating a futuristic holographic interface." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f0cf861-0a0d-4da7-b717-c7a7a25bd275/id-preview-8c4ab92f--55b0ad1e-0374-45bc-b3b4-e47c1ed21bd5.lovable.app-1776830660500.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f0cf861-0a0d-4da7-b717-c7a7a25bd275/id-preview-8c4ab92f--55b0ad1e-0374-45bc-b3b4-e47c1ed21bd5.lovable.app-1776830660500.png" },
     ],
     links: [
       {
@@ -69,5 +68,19 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  const [authenticated, setAuthenticated] = useState(false);
+
+  const handleAuthenticated = (_result: LoginResponse) => {
+    setAuthenticated(true);
+  };
+
+  return (
+    <AuthProvider>
+      {!authenticated ? (
+        <AuthScreen onAuthenticated={handleAuthenticated} />
+      ) : (
+        <Outlet />
+      )}
+    </AuthProvider>
+  );
 }
