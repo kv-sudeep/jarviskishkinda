@@ -1,0 +1,25 @@
+flask>=3.0.0
+flask-jwt-extended>=4.6.0
+flask-cors>=4.0.0
+python-dotenv>=1.0.0
+
+# Audio / voice fingerprinting
+SpeechRecognition>=3.10.0
+PyAudio>=0.2.14
+librosa>=0.10.1
+numpy>=1.26.0
+scipy>=1.12.0
+soundfile>=0.12.1
+
+# Webcam snapshot
+opencv-python>=4.9.0.80
+
+# Notifications
+twilio>=8.12.0
+
+# Hardware fingerprinting (Windows)
+wmi>=1.5.1
+pywin32>=306
+
+# Utilities
+cryptography>=42.0.0
