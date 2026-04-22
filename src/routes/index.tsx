@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Mic, MicOff } from "lucide-react";
 import { Background } from "@/components/jarvis/Background";
-import { JarvisCore } from "@/components/jarvis/JarvisCore";
+import { JarvisCore3D } from "@/components/jarvis/JarvisCore3D";
 import { Panel, StatRow, Bar, MiniGraph } from "@/components/jarvis/Panel";
 import { Waveform } from "@/components/jarvis/Waveform";
 import { Radar } from "@/components/jarvis/Radar";
@@ -8,13 +9,19 @@ import { BottomNav } from "@/components/jarvis/BottomNav";
 import { IronHelmet } from "@/components/jarvis/IronHelmet";
 import { StarkTower } from "@/components/jarvis/StarkTower";
 import { useClock, useLiveMetric } from "@/hooks/use-clock";
+import { useVoiceRecognition } from "@/hooks/use-voice";
+import { useLocation } from "@/hooks/use-location";
 
 export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
       { title: "JARVIS — Stark Industries AI Interface" },
-      { name: "description", content: "JARVIS 2.0 holographic AI control interface — live diagnostics, voice recognition, and environmental telemetry." },
+      {
+        name: "description",
+        content:
+          "JARVIS 2.0 holographic AI control interface — live diagnostics, voice recognition, and environmental telemetry.",
+      },
     ],
   }),
 });
@@ -24,6 +31,10 @@ function Index() {
   const coreTemp = useLiveMetric(36.4, 38.1, 0.2);
   const memory = useLiveMetric(38, 56, 1.2);
   const processor = useLiveMetric(18, 42, 1.5);
+  const voice = useVoiceRecognition();
+  const loc = useLocation();
+
+  const lastCommand = voice.logs[0];
 
   return (
     <>
@@ -53,16 +64,22 @@ function Index() {
           <aside className="col-span-3 flex flex-col gap-3 overflow-hidden">
             <Panel title="SYSTEM STATUS">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-hud-green animate-pulse-glow"
-                  style={{ boxShadow: "0 0 10px var(--hud-green)" }} />
+                <span
+                  className="h-2 w-2 rounded-full bg-hud-green animate-pulse-glow"
+                  style={{ boxShadow: "0 0 10px var(--hud-green)" }}
+                />
                 <span className="font-display text-lg tracking-widest text-hud-green hud-text-glow">
                   ONLINE
                 </span>
               </div>
               <IronHelmet />
               <div className="mt-2 text-center">
-                <div className="font-display text-base tracking-[0.2em] text-foreground">JARVIS 2.0.0</div>
-                <div className="text-[10px] tracking-[0.3em] text-muted-foreground">AI CORE SYSTEM</div>
+                <div className="font-display text-base tracking-[0.2em] text-foreground">
+                  JARVIS 2.0.0
+                </div>
+                <div className="text-[10px] tracking-[0.3em] text-muted-foreground">
+                  AI CORE SYSTEM
+                </div>
               </div>
             </Panel>
 
@@ -70,58 +87,143 @@ function Index() {
               <div className="font-display text-2xl text-foreground hud-text-glow">
                 {coreTemp.toFixed(1)} <span className="text-sm text-hud-cyan">°C</span>
               </div>
-              <div className="mt-1"><MiniGraph seed={1} /></div>
+              <div className="mt-1">
+                <MiniGraph seed={1} />
+              </div>
             </Panel>
 
             <Panel title="MEMORY USAGE">
               <div className="mb-1 flex items-baseline justify-between">
-                <span className="font-display text-xl text-foreground hud-text-glow">{memory.toFixed(0)}%</span>
-                <span className="text-[10px] tracking-widest text-muted-foreground">32GB / 56GB</span>
+                <span className="font-display text-xl text-foreground hud-text-glow">
+                  {memory.toFixed(0)}%
+                </span>
+                <span className="text-[10px] tracking-widest text-muted-foreground">
+                  32GB / 56GB
+                </span>
               </div>
               <Bar value={memory} />
-              <div className="mt-2"><MiniGraph seed={3} color="var(--hud-blue)" /></div>
+              <div className="mt-2">
+                <MiniGraph seed={3} color="var(--hud-blue)" />
+              </div>
             </Panel>
 
             <Panel title="PROCESSOR ACTIVITY">
-              <div className="mb-1 font-display text-xl text-foreground hud-text-glow">{processor.toFixed(0)}%</div>
+              <div className="mb-1 font-display text-xl text-foreground hud-text-glow">
+                {processor.toFixed(0)}%
+              </div>
               <Bar value={processor} />
-              <div className="mt-2"><MiniGraph seed={5} /></div>
+              <div className="mt-2">
+                <MiniGraph seed={5} />
+              </div>
             </Panel>
 
             <Panel title="VOICE RECOGNITION" className="mt-auto">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="h-1.5 w-1.5 bg-hud-green animate-pulse-glow" />
-                <span className="font-display text-xs tracking-[0.3em] text-hud-green">ACTIVE</span>
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`h-1.5 w-1.5 animate-pulse-glow ${
+                      voice.listening ? "bg-hud-green" : "bg-muted-foreground"
+                    }`}
+                  />
+                  <span
+                    className={`font-display text-xs tracking-[0.3em] ${
+                      voice.listening ? "text-hud-green" : "text-muted-foreground"
+                    }`}
+                  >
+                    {voice.supported
+                      ? voice.listening
+                        ? "LISTENING"
+                        : "STANDBY"
+                      : "UNSUPPORTED"}
+                  </span>
+                </div>
+                {voice.supported && (
+                  <button
+                    onClick={voice.listening ? voice.stop : voice.start}
+                    className="group flex items-center gap-1.5 border border-hud-cyan/40 bg-hud-cyan/5 px-2 py-1 transition-all hover:border-hud-cyan hover:bg-hud-cyan/10"
+                    style={{ boxShadow: "0 0 12px oklch(0.85 0.18 220 / 0.15)" }}
+                  >
+                    {voice.listening ? (
+                      <MicOff className="h-3 w-3 text-hud-orange" />
+                    ) : (
+                      <Mic className="h-3 w-3 text-hud-cyan" />
+                    )}
+                    <span className="font-display text-[9px] tracking-[0.3em] text-foreground">
+                      {voice.listening ? "STOP" : "ACTIVATE"}
+                    </span>
+                  </button>
+                )}
               </div>
-              <Waveform bars={40} />
+              <Waveform bars={40} active={voice.listening} />
+              {voice.interim && (
+                <div className="mt-2 text-[10px] tracking-wider text-hud-cyan/70 italic">
+                  ▸ {voice.interim}
+                </div>
+              )}
               <div className="mt-2 border-t border-hud-cyan/15 pt-2">
-                <div className="text-[9px] tracking-[0.3em] text-muted-foreground">LAST COMMAND</div>
-                <div className="font-display text-[11px] tracking-wider text-foreground">
-                  ▸ SHOW ME THE MARK 7 STATUS
+                <div className="text-[9px] tracking-[0.3em] text-muted-foreground">
+                  LAST COMMAND
                 </div>
-                <div className="mt-1 text-[9px] tracking-[0.3em] text-hud-green">
-                  STATUS: COMPLETED
+                <div className="font-display text-[11px] tracking-wider text-foreground min-h-[1.25rem]">
+                  {lastCommand
+                    ? `▸ ${lastCommand.text}`
+                    : voice.error
+                      ? `▸ ERROR: ${voice.error.toUpperCase()}`
+                      : voice.supported
+                        ? "▸ AWAITING INPUT . . ."
+                        : "▸ BROWSER NOT SUPPORTED"}
+                </div>
+                <div
+                  className={`mt-1 text-[9px] tracking-[0.3em] ${
+                    lastCommand ? "text-hud-green" : "text-muted-foreground"
+                  }`}
+                >
+                  {lastCommand
+                    ? `STATUS: COMPLETED · ${lastCommand.timestamp.toLocaleTimeString()}`
+                    : "STATUS: IDLE"}
                 </div>
               </div>
+              {voice.logs.length > 1 && (
+                <div className="mt-2 max-h-20 space-y-0.5 overflow-y-auto border-t border-hud-cyan/15 pt-2">
+                  {voice.logs.slice(1, 5).map((log) => (
+                    <div
+                      key={log.id}
+                      className="text-[9px] tracking-wider text-muted-foreground/80 truncate"
+                    >
+                      ▸ {log.text}
+                    </div>
+                  ))}
+                </div>
+              )}
             </Panel>
           </aside>
 
           {/* CENTER COLUMN */}
           <section className="col-span-6 flex flex-col items-center justify-between">
-            <JarvisCore />
+            <JarvisCore3D />
 
             <Panel className="w-full max-w-xl">
               <div className="mb-1 flex items-center gap-2">
-                <span className="font-display text-[10px] tracking-[0.4em] text-hud-cyan">▸ JARVIS</span>
-                <span className="text-[9px] tracking-[0.3em] text-muted-foreground animate-flicker">SPEAKING . . .</span>
+                <span className="font-display text-[10px] tracking-[0.4em] text-hud-cyan">
+                  ▸ JARVIS
+                </span>
+                <span className="text-[9px] tracking-[0.3em] text-muted-foreground animate-flicker">
+                  {voice.listening ? "LISTENING . . ." : "SPEAKING . . ."}
+                </span>
               </div>
               <div className="font-display text-base tracking-[0.15em] text-foreground hud-text-glow">
-                GOOD MORNING, SIR.
+                {lastCommand
+                  ? `ACKNOWLEDGED: "${lastCommand.text}"`
+                  : "GOOD MORNING, SIR."}
               </div>
               <div className="font-display text-sm tracking-[0.15em] text-foreground/90">
-                HOW CAN I ASSIST YOU TODAY?
+                {lastCommand
+                  ? "PROCESSING REQUEST . . ."
+                  : "HOW CAN I ASSIST YOU TODAY?"}
               </div>
-              <div className="mt-2"><Waveform bars={64} /></div>
+              <div className="mt-2">
+                <Waveform bars={64} active={voice.listening} />
+              </div>
             </Panel>
           </section>
 
@@ -131,17 +233,35 @@ function Index() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="text-[9px] tracking-[0.3em] text-muted-foreground">TIME</div>
-                  <div className="font-display text-xl text-foreground hud-text-glow tabular-nums">{time}</div>
+                  <div className="font-display text-xl text-foreground hud-text-glow tabular-nums">
+                    {time}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[9px] tracking-[0.3em] text-muted-foreground">DATE</div>
-                  <div className="font-display text-xs tracking-wider text-foreground">{date}</div>
+                  <div className="font-display text-xs tracking-wider text-foreground">
+                    {date}
+                  </div>
                 </div>
               </div>
               <div className="mt-2 border-t border-hud-cyan/15 pt-2">
-                <div className="text-[9px] tracking-[0.3em] text-muted-foreground">LOCATION</div>
-                <div className="font-display text-sm tracking-[0.2em] text-foreground hud-text-glow">STARK TOWER</div>
-                <div className="font-display text-[10px] tracking-[0.3em] text-hud-cyan">NEW YORK · USA</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-[9px] tracking-[0.3em] text-muted-foreground">
+                    LOCATION
+                  </div>
+                  {loc.loading && (
+                    <div className="text-[8px] tracking-[0.3em] text-hud-cyan animate-flicker">
+                      ◉ TRIANGULATING
+                    </div>
+                  )}
+                </div>
+                <div className="font-display text-sm tracking-[0.2em] text-foreground hud-text-glow">
+                  {loc.city}
+                  {loc.region && loc.region !== "—" ? `, ${loc.region}` : ""}
+                </div>
+                <div className="font-display text-[10px] tracking-[0.3em] text-hud-cyan">
+                  {loc.country} {loc.countryCode !== "—" && `· ${loc.countryCode}`}
+                </div>
               </div>
             </Panel>
 
