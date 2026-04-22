@@ -1,9 +1,11 @@
-<img width="1920" height="1080" alt="Screenshot 2026-04-22 114124" src="https://github.com/user-attachments/assets/f2ec5128-6ce4-41a0-af63-0561bee693b9" />
-<img width="1920" height="1080" alt="Screenshot 2026-04-22 114214" src="https://github.com/user-attachments/assets/7eb9b8cc-bf1f-4498-b192-ea6eea119aee" />
-<img width="1920" height="1080" alt="Screenshot 2026-04-22 114214" src="https://github.com/user-attachments/assets/9a68416a-d9bb-4d48-a879-2671d39a36a2" />
-<img width="1920" height="1080" alt="Screenshot 2026-04-22 114209" src="https://github.com/user-attachments/assets/743b41df-849c-43aa-b98f-5b03f3fb6d8a" />
-<img width="1920" height="1080" alt="Screenshot 2026-04-22 112606" src="https://github.com/user-attachments/assets/c4d496e2-6ee7-4c17-8849-eee15d53e253" />
-# JARVIS — Module 1: Owner Authentication & Security
+<img width="1920" height="1080" alt="Screenshot 2026-04-22 114124" src="https://github.com/user-attachments/assets/08fa390c-c826-4540-a1ae-9df2e5085b5c" />
+
+<img width="1920" height="1080" alt="Screenshot 2026-04-22 114214" src="https://github.com/user-attachments/assets/f10f85ab-e867-4f41-b203-8592d5c0fa77" />
+
+<img width="1920" height="1080" alt="Screenshot 2026-04-22 114209" src="https://github.com/user-attachments/assets/64ecc61f-8a84-42b5-897a-997702dbfc6f" />
+
+<img width="1920" height="1080" alt="Screenshot 2026-04-22 112606" src="https://github.com/user-attachments/assets/12ee6fcf-2161-4f5a-9848-8c56b6ed103f" />
+
 
 > **Python Flask backend** powering the multi-factor security gate for JARVIS 2.0.
 
