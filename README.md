@@ -1,10 +1,11 @@
-<img width="1920" height="1080" alt="Screenshot 2026-04-22 114124" src="https://github.com/user-attachments/assets/08fa390c-c826-4540-a1ae-9df2e5085b5c" />
 
-<img width="1920" height="1080" alt="Screenshot 2026-04-22 114214" src="https://github.com/user-attachments/assets/f10f85ab-e867-4f41-b203-8592d5c0fa77" />
+<img width="1920" height="1080" alt="Screenshot 2026-04-22 112606" src="https://github.com/user-attachments/assets/12ee6fcf-2161-4f5a-9848-8c56b6ed103f" /><br>
+<img width="1920" height="1080" alt="Screenshot 2026-04-22 114209" src="https://github.com/user-attachments/assets/64ecc61f-8a84-42b5-897a-997702dbfc6f" /><br><br>
+<img width="1920" height="1080" alt="Screenshot 2026-04-22 114214" src="https://github.com/user-attachments/assets/f10f85ab-e867-4f41-b203-8592d5c0fa77" /><br><br>
+<img width="1920" height="1080" alt="Screenshot 2026-04-22 114124" src="https://github.com/user-attachments/assets/08fa390c-c826-4540-a1ae-9df2e5085b5c" /><br><br>
 
-<img width="1920" height="1080" alt="Screenshot 2026-04-22 114209" src="https://github.com/user-attachments/assets/64ecc61f-8a84-42b5-897a-997702dbfc6f" />
 
-<img width="1920" height="1080" alt="Screenshot 2026-04-22 112606" src="https://github.com/user-attachments/assets/12ee6fcf-2161-4f5a-9848-8c56b6ed103f" />
+
 
 
 > **Python Flask backend** powering the multi-factor security gate for JARVIS 2.0.
