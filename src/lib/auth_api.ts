@@ -1,10 +1,10 @@
-"""
-auth_api.ts — JARVIS Frontend
-In-memory JWT token store + typed API client for the auth endpoints.
-
-SECURITY: Token is NEVER written to localStorage or sessionStorage.
-It lives in a module-level variable and vanishes when the tab closes.
-"""
+/**
+ * auth_api.ts — JARVIS Frontend
+ * In-memory JWT token store + typed API client for the auth endpoints.
+ *
+ * SECURITY: Token is NEVER written to localStorage or sessionStorage.
+ * It lives in a module-level variable and vanishes when the tab closes.
+ */
 
 // ── In-Memory Token Store ────────────────────────────────────────────────────
 
