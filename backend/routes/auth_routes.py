@@ -22,6 +22,8 @@ from security.auth import (
 )
 from security.voice import enroll_voice, verify_voice
 from security.intruder import activate_intruder_protocol
+from security import cloud_sync
+from security.supabase_client import get_client as get_cloud_client, get_owner_id
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +38,34 @@ INCIDENT_LOG       = os.getenv("INCIDENT_LOG", "./data/incidents.log")
 
 @auth_bp.get("/status")
 def status():
-    """Quick health/status check — returns setup state."""
+    """Quick health/status check — returns setup state + cloud sync status."""
+    cloud_ok = get_cloud_client() is not None
     return jsonify({
         "jarvis": "online",
         "setup_complete": is_setup_complete(),
         "failed_attempts": get_failed_attempts(),
         "max_attempts": MAX_ATTEMPTS,
+        "cloud_sync": cloud_ok,
+        "cloud_owner_bound": bool(get_owner_id()),
     })
+
+
+@auth_bp.get("/cloud/status")
+def cloud_status():
+    """Detailed cloud-sync diagnostic for the web HUD."""
+    sb = get_cloud_client()
+    if sb is None:
+        return jsonify({
+            "connected": False,
+            "reason": "Service-role key missing or JARVIS_CLOUD_SYNC=false",
+        }), 200
+    owner_id = get_owner_id()
+    locked = cloud_sync.is_account_locked() if owner_id else None
+    return jsonify({
+        "connected": True,
+        "owner_id_bound": bool(owner_id),
+        "account_locked": locked,
+    }), 200
 
 
 # ─── Setup ────────────────────────────────────────────────────────────────────
@@ -150,6 +173,13 @@ def login():
         return jsonify({"error": "No voice sample enrolled. Run /api/auth/setup/voice."}), 400
 
     voice_match, score = verify_voice(voice_ref_path)
+    cloud_sync.log_auth_attempt(
+        attempt_type="voice",
+        result="success" if voice_match else "fail",
+        confidence=int(round(score * 100)) if score else 0,
+        failure_reason=None if voice_match else "voice_similarity_below_threshold",
+        ip_address=request.remote_addr,
+    )
     if not voice_match:
         return jsonify({
             "error": "Voice fingerprint mismatch.",
@@ -157,16 +187,52 @@ def login():
             "threshold": 0.95,
         }), 401
 
-    # ── 4. Issue JWT Token ──
+    # ── 4. Issue JWT Token + open cloud session ──
     reset_failed_attempts()
     token = create_access_token(identity="owner")
+
+    # Mirror to Lovable Cloud: open session, bump owner counters, audit.
+    auth_score = min(100, int(round(score * 100)) + 30)  # voice + pin combined
+    cloud_session_id = cloud_sync.open_session(
+        login_method="multi",
+        auth_score=auth_score,
+        ip_address=request.remote_addr,
+        jwt_token=token,
+    )
+    cloud_sync.bump_owner_login()
+    cloud_sync.log_audit(
+        event_type="LOCAL_LOGIN_SUCCESS",
+        actor="owner",
+        description=f"Owner authenticated via Python backend (PIN+voice, score={score:.3f}).",
+        severity="info",
+    )
 
     logger.info("Login successful — JWT issued (score=%.4f)", score)
     return jsonify({
         "message": "JARVIS online. Welcome, sir.",
         "token": token,
         "voice_similarity": round(score, 4),
+        "cloud_session_id": cloud_session_id,
     }), 200
+
+
+# ─── Logout ──────────────────────────────────────────────────────────────────
+
+@auth_bp.post("/logout")
+@jwt_required()
+def logout():
+    """Close the cloud session if a session_id was returned at login."""
+    body = request.get_json(silent=True) or {}
+    session_id = body.get("cloud_session_id")
+    if session_id:
+        cloud_sync.close_session(session_id, reason="user_logout")
+    cloud_sync.log_audit(
+        event_type="LOCAL_LOGOUT",
+        actor="owner",
+        description="Owner logged out from Python backend.",
+        severity="info",
+    )
+    return jsonify({"message": "Session closed."}), 200
 
 
 # ─── Protected Example ────────────────────────────────────────────────────────

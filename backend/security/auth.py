@@ -10,7 +10,8 @@ import os
 import threading
 from pathlib import Path
 
-from security.hardware import generate_hardware_fingerprint
+from security.hardware import generate_hardware_fingerprint, get_hardware_components
+from security import cloud_sync
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,9 @@ def setup_credentials(pin: str) -> dict:
     """
     First-time setup: generate hardware fingerprint, hash the PIN, and save both
     to the local security config. Returns the stored fingerprint and hash.
+
+    Also registers this machine with Lovable Cloud (fail-soft) so the owner
+    can see authorized hardware in the web HUD.
     """
     fingerprint = generate_hardware_fingerprint()
     pin_hash    = hash_pin(pin, fingerprint)
@@ -57,6 +61,18 @@ def setup_credentials(pin: str) -> dict:
     config["hardware_fingerprint"] = fingerprint
     config["pin_hash"]             = pin_hash
     _save_config(config)
+
+    # Cloud: register this machine + audit the setup event.
+    try:
+        cloud_sync.register_hardware(fingerprint, get_hardware_components())
+        cloud_sync.log_audit(
+            event_type="HARDWARE_REGISTERED",
+            actor="system",
+            description="Local Python backend registered hardware fingerprint.",
+            severity="info",
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Cloud registration failed (continuing locally): %s", exc)
 
     logger.info("Credentials setup complete. Fingerprint stored.")
     return {"fingerprint": fingerprint, "pin_hash": pin_hash}
@@ -120,6 +136,13 @@ def verify_pin(pin: str) -> bool:
         if submitted_hash == stored_hash:
             _failed_attempts = 0
             logger.info("PIN verification successful.")
+            cloud_sync.log_auth_attempt(
+                attempt_type="pin",
+                result="success",
+                confidence=100,
+                attempt_number=1,
+                device_fingerprint=fingerprint[:32],
+            )
             return True
         else:
             _failed_attempts += 1
@@ -128,7 +151,23 @@ def verify_pin(pin: str) -> bool:
                 "PIN verification failed. Attempt %d/%d. Remaining: %d",
                 _failed_attempts, MAX_ATTEMPTS, remaining
             )
+            cloud_sync.log_auth_attempt(
+                attempt_type="pin",
+                result="fail",
+                confidence=0,
+                failure_reason="pin_mismatch",
+                attempt_number=_failed_attempts,
+                lockdown_triggered=_failed_attempts >= MAX_ATTEMPTS,
+                threat_level="4" if _failed_attempts >= MAX_ATTEMPTS else "2",
+                device_fingerprint=fingerprint[:32],
+            )
             if _failed_attempts >= MAX_ATTEMPTS:
+                cloud_sync.log_intruder_event(
+                    trigger_type="repeated_pin_failure_local",
+                    threat_level="4",
+                    pin_attempts=_failed_attempts,
+                    actions_taken=[{"type": "local_lockdown", "source": "python_backend"}],
+                )
                 raise RuntimeError(
                     f"LOCKDOWN: {MAX_ATTEMPTS} failed attempts. Intruder protocol activated."
                 )
