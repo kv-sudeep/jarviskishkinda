@@ -99,9 +99,9 @@ export const verifyTotpAttempt = createServerFn({ method: "POST" })
       return { ok: false, reason: "totp_not_enabled" };
     }
     // Lazy import otplib (server-only)
-    const { authenticator } = await import("otplib");
-    authenticator.options = { window: 1 };
-    const ok = authenticator.check(data.code, owner.totp_secret_encrypted);
+    const otplib = await import("otplib");
+    otplib.authenticator.options = { window: 1 };
+    const ok = otplib.authenticator.check(data.code, owner.totp_secret_encrypted);
 
     await supabase.from("auth_attempts").insert({
       attempt_type: "totp",
@@ -198,19 +198,20 @@ export const getDashboardData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: owner } = await supabase
+    const { data: ownerRaw } = await supabase
       .from("owners")
-      .select("*")
+      .select("owner_id, full_name, account_status, security_level, two_factor_enabled, total_logins_count, failed_attempt_count, lockdown_triggered_count, total_intruders_caught, last_login_at, setup_complete, pin_enabled, hardware_lock_enabled, emergency_contact_email, preferred_language, timezone")
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (!owner) return { owner: null, recentAttempts: [], recentAudit: [], activeSessions: [], openIntrusions: [] };
+    if (!ownerRaw) return { owner: null, recentAttempts: [], recentAudit: [], activeSessions: [], openIntrusions: [] };
+    const owner = ownerRaw;
 
     const [attempts, audit, sessions, intrusions] = await Promise.all([
-      supabase.from("auth_attempts").select("*").order("timestamp", { ascending: false }).limit(20),
-      supabase.from("audit_log").select("*").order("timestamp", { ascending: false }).limit(30),
-      supabase.from("sessions").select("*").eq("owner_id", owner.owner_id).eq("is_active", true).order("issued_at", { ascending: false }).limit(10),
-      supabase.from("intruder_events").select("*").eq("resolved", false).order("detected_at", { ascending: false }).limit(10),
+      supabase.from("auth_attempts").select("attempt_id, timestamp, attempt_type, result, confidence_score, failure_reason, threat_level, lockdown_triggered, attempt_number_in_sequence").order("timestamp", { ascending: false }).limit(20),
+      supabase.from("audit_log").select("log_id, timestamp, event_type, actor, action_description, affected_resource, severity").order("timestamp", { ascending: false }).limit(30),
+      supabase.from("sessions").select("session_id, issued_at, expires_at, is_active, login_method, auth_score, anomaly_score, os_name, device_type, location_city, location_country").eq("owner_id", owner.owner_id).eq("is_active", true).order("issued_at", { ascending: false }).limit(10),
+      supabase.from("intruder_events").select("event_id, detected_at, trigger_type, threat_level, pin_attempts, owner_reviewed, resolved, false_alarm").eq("resolved", false).order("detected_at", { ascending: false }).limit(10),
     ]);
 
     return {
