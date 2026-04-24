@@ -10,7 +10,7 @@
  */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useJarvisSession } from "@/hooks/use-jarvis-session";
 import { HudShell, HudPanel, HudButton, HudInput } from "@/components/jarvis/HudShell";
@@ -197,8 +197,8 @@ function SetupWizard({ onDone }: { onDone: () => Promise<void> }) {
     codes: generateBackupCodes(8),
   }));
 
-  const next = () => setStep((s) => Math.min(5, (s + 1) as 1 | 2 | 3 | 4 | 5));
-  const prev = () => setStep((s) => Math.max(1, (s - 1) as 1 | 2 | 3 | 4 | 5));
+  const next = () => setStep((s) => (Math.min(5, s + 1) as 1 | 2 | 3 | 4 | 5));
+  const prev = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4 | 5));
 
   const finalize = async () => {
     setError(null);
