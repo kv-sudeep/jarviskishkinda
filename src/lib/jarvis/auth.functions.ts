@@ -6,6 +6,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+// Inline SHA-256 (Web Crypto, works in Worker SSR)
+async function sha256Hex(input: string): Promise<string> {
+  const buf = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 // ── Verify PIN (browser hashes PIN + sends hash; we compare) ─────────────────
 export const verifyPinAttempt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -137,7 +146,6 @@ export const requestEmailOtp = createServerFn({ method: "POST" })
     const code = String(Math.floor(100000 + Math.random() * 900000));
     // Store hash in audit_log (immutable but fine for transient codes;
     // we look up the most-recent EMAIL_OTP_REQUESTED for this owner)
-    const { sha256Hex } = await import("./crypto.server");
     const hash = await sha256Hex(`${owner.owner_id}:${code}`);
     await supabase.from("audit_log").insert({
       event_type: "EMAIL_OTP_REQUESTED",
@@ -165,7 +173,6 @@ export const verifyEmailOtp = createServerFn({ method: "POST" })
       .from("owners").select("owner_id").eq("user_id", userId).maybeSingle();
     if (!owner) return { ok: false };
 
-    const { sha256Hex } = await import("./crypto.server");
     const hash = await sha256Hex(`${owner.owner_id}:${data.code}`);
     const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data: log } = await supabase
