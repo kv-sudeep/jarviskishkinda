@@ -22,6 +22,8 @@ from security.auth import (
 )
 from security.voice import enroll_voice, verify_voice
 from security.intruder import activate_intruder_protocol
+from security import cloud_sync
+from security.supabase_client import get_client as get_cloud_client, get_owner_id
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +38,34 @@ INCIDENT_LOG       = os.getenv("INCIDENT_LOG", "./data/incidents.log")
 
 @auth_bp.get("/status")
 def status():
-    """Quick health/status check — returns setup state."""
+    """Quick health/status check — returns setup state + cloud sync status."""
+    cloud_ok = get_cloud_client() is not None
     return jsonify({
         "jarvis": "online",
         "setup_complete": is_setup_complete(),
         "failed_attempts": get_failed_attempts(),
         "max_attempts": MAX_ATTEMPTS,
+        "cloud_sync": cloud_ok,
+        "cloud_owner_bound": bool(get_owner_id()),
     })
+
+
+@auth_bp.get("/cloud/status")
+def cloud_status():
+    """Detailed cloud-sync diagnostic for the web HUD."""
+    sb = get_cloud_client()
+    if sb is None:
+        return jsonify({
+            "connected": False,
+            "reason": "Service-role key missing or JARVIS_CLOUD_SYNC=false",
+        }), 200
+    owner_id = get_owner_id()
+    locked = cloud_sync.is_account_locked() if owner_id else None
+    return jsonify({
+        "connected": True,
+        "owner_id_bound": bool(owner_id),
+        "account_locked": locked,
+    }), 200
 
 
 # ─── Setup ────────────────────────────────────────────────────────────────────
