@@ -41,6 +41,32 @@ backend/
 | **Voice Fingerprint** | MFCC extraction via `librosa`, cosine similarity ≥ 95% |
 | **JWT Sessions** | 4-hour expiry, Bearer token, in-memory only on frontend |
 | **Intruder Protocol** | Triggered on 3rd failed attempt |
+| **Lovable Cloud Sync** | Mirrors auth_attempts / audit_log / sessions / intruder_events / hardware_fingerprints into the shared Supabase project (fail-soft) |
+
+---
+
+## Lovable Cloud Bridge (shared backend)
+
+The Python backend writes every auth attempt, audit event, intruder event,
+hardware fingerprint and session into the **same Supabase project** that powers
+the Lovable web HUD. This means the `/security` dashboard in the browser shows
+**both** browser-originated logins and local Python-backend logins.
+
+The bridge is fail-soft: if `JARVIS_CLOUD_SYNC=false` or the service-role key
+is missing, JARVIS keeps running purely on the local machine. This preserves
+the air-gapped guarantee.
+
+To enable cloud sync, edit `backend/.env`:
+
+```env
+SUPABASE_URL=https://llwkowocacvwkssrnsgg.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<copy from Lovable Cloud → Backend → API keys>
+SUPABASE_OWNER_ID=<owner_id UUID — visible in /security after web setup>
+JARVIS_CLOUD_SYNC=true
+```
+
+The service-role key bypasses RLS and **must stay on the server**. Never
+embed it in any client-side code.
 
 ---
 
@@ -115,10 +141,12 @@ On success, you receive:
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `GET` | `/api/auth/status` | None | Check setup state + failed attempts |
-| `POST` | `/api/auth/setup` | None | Record hardware fingerprint + PIN hash |
+| `GET` | `/api/auth/status` | None | Check setup state + failed attempts + cloud-sync flag |
+| `GET` | `/api/auth/cloud/status` | None | Diagnostic — confirms Supabase connectivity + owner binding |
+| `POST` | `/api/auth/setup` | None | Record hardware fingerprint + PIN hash (auto-mirrors to cloud) |
 | `POST` | `/api/auth/setup/voice` | None | Record voice biometric sample |
-| `POST` | `/api/auth/login` | None | Multi-factor login → JWT token |
+| `POST` | `/api/auth/login` | None | Multi-factor login → JWT token + cloud session |
+| `POST` | `/api/auth/logout` | JWT | Close cloud session |
 | `GET` | `/api/auth/me` | JWT | Verify token is valid |
 
 ---
