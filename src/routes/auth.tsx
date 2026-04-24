@@ -351,7 +351,7 @@ function SetupWizard({ onDone }: { onDone: () => Promise<void> }) {
           {enableTotpFlag && totp && (
             <div className="space-y-2">
               <div className="bg-white p-3 rounded inline-block">
-                <QRCode value={totp.otpauth} size={160} />
+                <QRCodeSVG value={totp.otpauth} size={160} />
               </div>
               <div className="text-[10px] tracking-wider text-hud-cyan/60 break-all">
                 Secret: <span className="text-hud-cyan">{totp.secret}</span>
