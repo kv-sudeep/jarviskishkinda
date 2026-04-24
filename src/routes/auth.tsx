@@ -32,7 +32,7 @@ import {
   requestEmailOtp,
   verifyEmailOtp,
 } from "@/lib/jarvis/auth.functions";
-import { generateTotpSecret, enableTotp } from "@/lib/jarvis/totp.server";
+import { generateTotpSecret, enableTotp } from "@/lib/jarvis/totp.functions";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
