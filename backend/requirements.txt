@@ -18,8 +18,12 @@ opencv-python>=4.9.0.80
 twilio>=8.12.0
 
 # Hardware fingerprinting (Windows)
-wmi>=1.5.1
-pywin32>=306
+wmi>=1.5.1; sys_platform == "win32"
+pywin32>=306; sys_platform == "win32"
 
 # Utilities
 cryptography>=42.0.0
+requests>=2.31.0
+
+# Lovable Cloud (Supabase) sync
+supabase>=2.5.0
