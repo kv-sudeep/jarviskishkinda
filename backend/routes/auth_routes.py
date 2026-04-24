@@ -173,6 +173,13 @@ def login():
         return jsonify({"error": "No voice sample enrolled. Run /api/auth/setup/voice."}), 400
 
     voice_match, score = verify_voice(voice_ref_path)
+    cloud_sync.log_auth_attempt(
+        attempt_type="voice",
+        result="success" if voice_match else "fail",
+        confidence=int(round(score * 100)) if score else 0,
+        failure_reason=None if voice_match else "voice_similarity_below_threshold",
+        ip_address=request.remote_addr,
+    )
     if not voice_match:
         return jsonify({
             "error": "Voice fingerprint mismatch.",
@@ -180,16 +187,52 @@ def login():
             "threshold": 0.95,
         }), 401
 
-    # ── 4. Issue JWT Token ──
+    # ── 4. Issue JWT Token + open cloud session ──
     reset_failed_attempts()
     token = create_access_token(identity="owner")
+
+    # Mirror to Lovable Cloud: open session, bump owner counters, audit.
+    auth_score = min(100, int(round(score * 100)) + 30)  # voice + pin combined
+    cloud_session_id = cloud_sync.open_session(
+        login_method="multi",
+        auth_score=auth_score,
+        ip_address=request.remote_addr,
+        jwt_token=token,
+    )
+    cloud_sync.bump_owner_login()
+    cloud_sync.log_audit(
+        event_type="LOCAL_LOGIN_SUCCESS",
+        actor="owner",
+        description=f"Owner authenticated via Python backend (PIN+voice, score={score:.3f}).",
+        severity="info",
+    )
 
     logger.info("Login successful — JWT issued (score=%.4f)", score)
     return jsonify({
         "message": "JARVIS online. Welcome, sir.",
         "token": token,
         "voice_similarity": round(score, 4),
+        "cloud_session_id": cloud_session_id,
     }), 200
+
+
+# ─── Logout ──────────────────────────────────────────────────────────────────
+
+@auth_bp.post("/logout")
+@jwt_required()
+def logout():
+    """Close the cloud session if a session_id was returned at login."""
+    body = request.get_json(silent=True) or {}
+    session_id = body.get("cloud_session_id")
+    if session_id:
+        cloud_sync.close_session(session_id, reason="user_logout")
+    cloud_sync.log_audit(
+        event_type="LOCAL_LOGOUT",
+        actor="owner",
+        description="Owner logged out from Python backend.",
+        severity="info",
+    )
+    return jsonify({"message": "Session closed."}), 200
 
 
 # ─── Protected Example ────────────────────────────────────────────────────────
