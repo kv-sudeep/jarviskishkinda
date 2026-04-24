@@ -8,12 +8,12 @@ import { z } from "zod";
 export const generateTotpSecret = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    const { TOTP } = await import("otplib");
-    const totp = new TOTP();
-    const secret = totp.generateSecret();
-    const otpauth = totp.generateURI({
+    const { OTP } = await import("otplib");
+    const otp = new OTP({ strategy: "totp" });
+    const secret = otp.generateSecret();
+    const otpauth = otp.generateURI({
       secret,
-      accountName: "owner",
+      label: "owner",
       issuer: "JARVIS",
     });
     return { secret, otpauth };
@@ -28,10 +28,10 @@ export const enableTotp = createServerFn({ method: "POST" })
     }).parse(input)
   )
   .handler(async ({ data, context }) => {
-    const { TOTP } = await import("otplib");
-    const totp = new TOTP({ window: 1 });
-    const ok = await totp.verify({ token: data.verify_code, secret: data.secret });
-    if (!ok) {
+    const { OTP } = await import("otplib");
+    const otp = new OTP({ strategy: "totp" });
+    const result = await otp.verify({ token: data.verify_code, secret: data.secret, epochTolerance: 30 });
+    if (!result.valid) {
       return { ok: false, error: "Verification code did not match. Try again." };
     }
     const { supabase, userId } = context;

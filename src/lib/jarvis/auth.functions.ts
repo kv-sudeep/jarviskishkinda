@@ -99,9 +99,10 @@ export const verifyTotpAttempt = createServerFn({ method: "POST" })
       return { ok: false, reason: "totp_not_enabled" };
     }
     // Lazy import otplib (server-only)
-    const { TOTP } = await import("otplib");
-    const totp = new TOTP({ window: 1 });
-    const ok = await totp.verify({ token: data.code, secret: owner.totp_secret_encrypted });
+    const { OTP } = await import("otplib");
+    const otp = new OTP({ strategy: "totp" });
+    const result = await otp.verify({ token: data.code, secret: owner.totp_secret_encrypted, epochTolerance: 30 });
+    const ok = result.valid;
 
     await supabase.from("auth_attempts").insert({
       attempt_type: "totp",
